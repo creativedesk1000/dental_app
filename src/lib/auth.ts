@@ -4,9 +4,10 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { ClinicStatus, Role } from "@prisma/client";
 import { generateSessionTokenId } from "@/lib/session-token";
+import { authConfig } from "@/lib/auth.config";
 
-const SESSION_MAX_AGE_DEFAULT = 24 * 60 * 60; // 1 day
-const SESSION_MAX_AGE_REMEMBER = 30 * 24 * 60 * 60; // 30 days
+const SESSION_MAX_AGE_DEFAULT = 24 * 60 * 60;
+const SESSION_MAX_AGE_REMEMBER = 30 * 24 * 60 * 60;
 
 declare module "next-auth" {
   interface Session {
@@ -38,28 +39,7 @@ declare module "@auth/core/jwt" {
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  trustHost: true,
-  session: {
-    strategy: "jwt",
-    maxAge: SESSION_MAX_AGE_REMEMBER,
-  },
-  pages: {
-    signIn: "/login",
-  },
-  cookies: {
-    sessionToken: {
-      name:
-        process.env.NODE_ENV === "production"
-          ? "__Secure-authjs.session-token"
-          : "authjs.session-token",
-      options: {
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        secure: process.env.NODE_ENV === "production",
-      },
-    },
-  },
+  ...authConfig,
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -75,7 +55,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const email = credentials.email as string;
         const password = credentials.password as string;
-        const rememberMe = credentials.rememberMe === "true" || credentials.rememberMe === true;
+        const rememberMe =
+          credentials.rememberMe === "true" || credentials.rememberMe === true;
 
         const user = await prisma.user.findUnique({
           where: { email },
@@ -101,7 +82,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
 
         const sessionTokenId = generateSessionTokenId();
-        const maxAge = rememberMe ? SESSION_MAX_AGE_REMEMBER : SESSION_MAX_AGE_DEFAULT;
+        const maxAge = rememberMe
+          ? SESSION_MAX_AGE_REMEMBER
+          : SESSION_MAX_AGE_DEFAULT;
         const expiresAt = new Date(Date.now() + maxAge * 1000);
 
         const userAgent = request?.headers?.get("user-agent") || undefined;
@@ -139,6 +122,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
+    ...authConfig.callbacks,
     async jwt({ token, user }) {
       if (user) {
         const dbUser = await prisma.user.findUnique({
@@ -182,17 +166,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
 
       return token;
-    },
-    async session({ session, token }) {
-      if (!token || !session.user) {
-        return session;
-      }
-
-      session.user.id = token.id as string;
-      session.user.role = token.role as Role;
-      session.user.clinicId = token.clinicId as string | null;
-      session.user.sessionTokenId = token.sessionTokenId as string;
-      return session;
     },
   },
   events: {

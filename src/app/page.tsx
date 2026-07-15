@@ -1,29 +1,15 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import {
   Users, Calendar, FileText, Activity, Pill, DollarSign,
   Package, BarChart, Building2, Cloud, Smartphone, Bot,
-  CheckCircle2, ArrowRight, Play, ArrowUpRight, PhoneCall, Clock
+  CheckCircle2, PhoneCall, Clock
 } from "lucide-react";
 import Image from "next/image";
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
-};
-
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.1 }
-  }
-};
 
 export default function Home() {
   return (
@@ -52,10 +38,12 @@ export default function Home() {
             
             <div className="relative mx-auto w-full max-w-[600px] lg:max-w-none flex justify-center">
               <div className="relative w-80 h-80 lg:w-96 lg:h-96 rounded-full overflow-hidden shadow-2xl border-4 border-white bg-gray-100 z-10">
-                 <img 
-                    src="/hero-dentist.png" 
-                    alt="Dental Clinic" 
-                    className="object-cover w-full h-full"
+                 <Image
+                    src="/hero-dentist.png"
+                    alt="Dental Clinic"
+                    fill
+                    className="object-cover"
+                    priority
                  />
               </div>
               
