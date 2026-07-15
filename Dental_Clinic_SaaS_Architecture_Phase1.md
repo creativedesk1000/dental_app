@@ -1,132 +1,243 @@
-# Dental Clinic SaaS Architecture (Phase 1)
+We have completed the marketing website, landing pages, UI components, and basic dashboard layouts.
 
-## Vision
+Now focus ONLY on the backend foundation and authentication. Do NOT build patient management, appointments, billing, inventory, or other business modules yet.
 
-Build a multi-tenant Dental Clinic SaaS using: - Next.js 15 +
-TypeScript - Prisma + PostgreSQL - Auth.js - Tailwind CSS + shadcn/ui +
-Framer Motion - Flutter (later)
+## Objectives
 
-## Development Roadmap
-
-### Phase 1 (Current)
-
--   Project setup
--   Authentication
--   Multi-tenant SaaS architecture
--   Super Admin dashboard
--   Clinic dashboard
--   Role-based access (Super Admin, Clinic Admin, Receptionist, Doctor)
--   Database schema
--   REST API for future Flutter integration
--   Marketing website
--   APK download page (placeholder)
-
-### Phase 2
-
--   Patient management
--   Doctors
--   Appointments
--   Billing
--   Prescriptions
--   Reports
--   Notifications
--   Inventory
-
-### Phase 3
-
-Flutter apps: - Patient - Doctor - Reception
-
-Reuse the same Next.js APIs.
-
-## Website Structure
-
--   Home
--   Features
--   Pricing
--   Book Demo
--   Contact
--   Login
--   Dashboard
--   Download APK
--   FAQ
--   Blog
-
-## SaaS Modules
-
-### Super Admin
-
--   Clinics
--   Subscriptions
--   Users
--   Analytics
--   System Settings
--   APK Management
--   Monitoring
-
-### Clinic Dashboard
-
--   Dashboard
--   Patients
--   Doctors
--   Reception
--   Appointments
--   Billing
--   Inventory
--   Reports
--   Settings
+Convert the project into a production-ready multi-tenant SaaS.
 
 ## Authentication
 
--   Auth.js
--   Email/password
--   JWT
--   RBAC
--   Tenant isolation using clinic_id
+Implement Auth.js with:
 
-## Initial REST APIs
+- Login
+- Register Clinic
+- Forgot Password
+- Reset Password
+- Email Verification
+- Change Password
+- Logout
+- Remember Me
+- Session Management
 
--   POST /api/auth/login
--   POST /api/auth/register
--   POST /api/auth/logout
--   GET /api/me
--   GET /api/clinics
--   POST /api/clinics
--   GET /api/patients
--   POST /api/patients
--   GET /api/doctors
--   POST /api/doctors
--   GET /api/appointments
--   POST /api/appointments
+Use secure password hashing and JWT/session authentication.
 
-These APIs will later be consumed by Flutter.
+---
 
-## Database (Core)
+## Multi-Tenant SaaS
 
-Clinic User Role Patient Doctor Appointment
+This application must support multiple dental clinics.
 
-Every business table contains clinic_id.
+Each clinic has completely isolated data.
 
-## Folder Structure
+Every business table must contain:
 
-app/ components/ features/ lib/ prisma/ services/ hooks/ types/ api/
+- clinic_id
 
-## UI
+Users should NEVER be able to access another clinic's data.
 
--   Responsive
--   Framer Motion
--   Glassmorphism
--   Dark/Light mode
--   Reusable components
+---
 
-## Prompt Strategy
+## User Roles
 
-1.  Build foundation only.
-2.  Finish auth and multi-tenant SaaS.
-3.  Finish admin dashboards.
-4.  Build REST APIs.
-5.  Integrate Flutter apps without changing APIs.
+Implement Role-Based Access Control (RBAC).
 
-## Goal
+Roles:
 
-A single Vercel deployment for MVP supporting a few clinics, with an
-architecture that can later scale to paid hosting.
+- Super Admin
+- Clinic Admin
+- Doctor
+- Receptionist
+
+Each role should have middleware protection.
+
+---
+
+## Super Admin
+
+Create backend functionality for:
+
+- Create Clinic
+- Edit Clinic
+- Delete Clinic
+- Suspend Clinic
+- Activate Clinic
+
+Each clinic should have:
+
+- Name
+- Logo
+- Email
+- Phone
+- Address
+- Subscription Status
+- Created Date
+
+---
+
+## Register Clinic Flow
+
+When a new clinic registers:
+
+Automatically create:
+
+- Clinic
+- Clinic Admin account
+- Default Settings
+- Default Roles
+
+The Clinic Admin should receive full access only to their own clinic.
+
+---
+
+## Database
+
+Create Prisma schema for:
+
+Clinic
+
+User
+
+Role
+
+Permission
+
+Subscription
+
+Settings
+
+Session
+
+Audit Log
+
+Use proper relationships and indexes.
+
+---
+
+## APIs
+
+Create REST APIs for:
+
+Authentication
+
+Current User
+
+Clinics
+
+Users
+
+Roles
+
+Permissions
+
+Settings
+
+These APIs will be reused by future modules.
+
+---
+
+## Middleware
+
+Implement middleware for:
+
+Authentication
+
+Role Authorization
+
+Tenant Isolation
+
+Protected Routes
+
+---
+
+## Dashboard
+
+Connect dashboard cards to real database values.
+
+Example:
+
+Total Clinics
+
+Active Clinics
+
+Total Users
+
+Online Users
+
+Subscription Status
+
+---
+
+## Settings
+
+Clinic Settings
+
+Profile
+
+Logo
+
+Business Information
+
+Timezone
+
+Language
+
+Theme
+
+---
+
+## File Upload
+
+Implement secure uploads for:
+
+Clinic Logo
+
+User Avatar
+
+Store files using the existing storage configuration.
+
+---
+
+## Error Handling
+
+Centralized API responses.
+
+Validation using Zod.
+
+Global error handler.
+
+Proper HTTP status codes.
+
+---
+
+## Security
+
+Protected API routes
+
+CSRF protection
+
+Rate limiting
+
+Input validation
+
+Secure cookies
+
+Password hashing
+
+Audit logging
+
+---
+
+## Code Quality
+
+Use feature-based architecture.
+
+Keep reusable services.
+
+Use TypeScript best practices.
+
+Write clean, scalable code.
+
+Do NOT build Patients, Doctors, Appointments, Billing, Inventory, or Reports yet.
+
+Only complete the SaaS backend foundation so future modules can plug into it without refactoring.

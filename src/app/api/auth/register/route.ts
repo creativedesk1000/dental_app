@@ -4,6 +4,8 @@ import { prisma } from '@/lib/prisma';
 import { Role } from '@prisma/client';
 
 export async function POST(req: Request) {
+  // touched
+
   try {
     const { name, email, password, clinicName, subdomain } = await req.json();
 
@@ -26,7 +28,7 @@ export async function POST(req: Request) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create Clinic and Clinic Admin in a transaction
-    const user = await prisma.$transaction(async (tx) => {
+    const user = await prisma.$transaction(async (tx: any) => {
       const clinic = await tx.clinic.create({
         data: {
           name: clinicName,

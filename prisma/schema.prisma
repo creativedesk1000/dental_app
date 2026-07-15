@@ -6,25 +6,37 @@ datasource db {
   provider = "postgresql"
 }
 
-// Multi-Clinic architecture models
-
-model Clinic {
-  id          String   @id @default(cuid())
-  name        String
-  subdomain   String   @unique
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  users       User[]
-  patients    Patient[]
-  appointments Appointment[]
-}
-
 enum Role {
   SUPER_ADMIN
   CLINIC_ADMIN
   RECEPTIONIST
   DOCTOR
+}
+
+enum ClinicStatus {
+  ACTIVE
+  SUSPENDED
+  INACTIVE
+}
+
+model Clinic {
+  id                 String       @id @default(cuid())
+  name               String
+  subdomain          String       @unique
+  logo               String?
+  email              String?
+  phone              String?
+  address            String?
+  status             ClinicStatus @default(ACTIVE)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  users              User[]
+  patients           Patient[]
+  appointments       Appointment[]
+  subscription       Subscription?
+  settings           Settings?
+  auditLogs          AuditLog[]
 }
 
 model User {
@@ -36,15 +48,56 @@ model User {
   image         String?
   role          Role      @default(DOCTOR)
   
-  ClinicId      String?
-  Clinic        Clinic?   @relation(fields: [ClinicId], references: [id])
+  clinicId      String?
+  clinic        Clinic?   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
 
   accounts      Account[]
   sessions      Session[]
-  
   appointments  Appointment[] @relation("DoctorAppointments")
+  auditLogs     AuditLog[]
 }
 
+model Subscription {
+  id              String   @id @default(cuid())
+  clinicId        String   @unique
+  clinic          Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  plan            String   @default("STARTER")
+  status          String   @default("ACTIVE")
+  startDate       DateTime @default(now())
+  endDate         DateTime?
+  stripeCustomerId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Settings {
+  id              String   @id @default(cuid())
+  clinicId        String   @unique
+  clinic          Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  timezone        String   @default("UTC")
+  language        String   @default("en")
+  theme           String   @default("light")
+  businessHours   String?  // Storing as JSON string
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  action      String
+  entity      String
+  entityId    String?
+  details     String?  // Storing as JSON string
+  createdAt   DateTime @default(now())
+  
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  clinicId    String
+  clinic      Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+}
+
+// Keeping basic models for future compatibility, not building out yet
 model Patient {
   id          String   @id @default(cuid())
   firstName   String
@@ -55,8 +108,8 @@ model Patient {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  ClinicId    String
-  Clinic      Clinic   @relation(fields: [ClinicId], references: [id])
+  clinicId    String
+  clinic      Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
 
   appointments Appointment[]
 }
@@ -65,25 +118,18 @@ model Appointment {
   id          String   @id @default(cuid())
   date        DateTime
   notes       String?
-  status      AppointmentStatus @default(SCHEDULED)
+  status      String   @default("SCHEDULED")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  ClinicId    String
-  Clinic      Clinic   @relation(fields: [ClinicId], references: [id])
+  clinicId    String
+  clinic      Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
 
   patientId   String
-  patient     Patient  @relation(fields: [patientId], references: [id])
+  patient     Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
   doctorId    String
-  doctor      User     @relation("DoctorAppointments", fields: [doctorId], references: [id])
-}
-
-enum AppointmentStatus {
-  SCHEDULED
-  COMPLETED
-  CANCELLED
-  NO_SHOW
+  doctor      User     @relation("DoctorAppointments", fields: [doctorId], references: [id], onDelete: Cascade)
 }
 
 // Auth.js required models
