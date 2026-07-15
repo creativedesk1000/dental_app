@@ -282,7 +282,7 @@ export default function Home() {
             <h3 className="text-4xl font-bold text-gray-900">Frequently Asked Questions</h3>
           </div>
           
-          <Accordion type="single" collapsible className="w-full text-lg">
+          <Accordion className="w-full text-lg">
             {[
               { q: "Is my patient data secure?", a: "Yes. We use AES-256 encryption, automatic daily backups, and are fully HIPAA compliant." },
               { q: "Can I migrate from another software?", a: "Absolutely! Our team provides free migration assistance to transfer your data seamlessly without downtime." },

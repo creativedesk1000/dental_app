@@ -1,17 +1,39 @@
-import { NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { prisma } from "@/lib/prisma";
+import {
+  apiSuccess,
+  handleApiError,
+} from "@/lib/api-response";
+import { getAuthSession } from "@/lib/auth-guard";
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
-    const session = await auth();
+    const session = await getAuthSession();
 
-    if (!session || !session.user) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-    }
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        clinicId: true,
+        emailVerified: true,
+        image: true,
+        lastLoginAt: true,
+        clinic: {
+          select: {
+            id: true,
+            name: true,
+            subdomain: true,
+            logo: true,
+            status: true,
+          },
+        },
+      },
+    });
 
-    return NextResponse.json({ user: session.user }, { status: 200 });
+    return apiSuccess({ user, sessionTokenId: session.user.sessionTokenId });
   } catch (error) {
-    console.error('Me API Error:', error);
-    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
+    return handleApiError(error);
   }
 }

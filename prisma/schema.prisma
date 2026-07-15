@@ -20,133 +20,185 @@ enum ClinicStatus {
 }
 
 model Clinic {
-  id                 String       @id @default(cuid())
-  name               String
-  subdomain          String       @unique
-  logo               String?
-  email              String?
-  phone              String?
-  address            String?
-  status             ClinicStatus @default(ACTIVE)
-  createdAt          DateTime     @default(now())
-  updatedAt          DateTime     @updatedAt
+  id        String       @id @default(cuid())
+  name      String
+  subdomain String       @unique
+  logo      String?
+  email     String?
+  phone     String?
+  address   String?
+  status    ClinicStatus @default(ACTIVE)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
 
-  users              User[]
-  patients           Patient[]
-  appointments       Appointment[]
-  subscription       Subscription?
-  settings           Settings?
-  auditLogs          AuditLog[]
+  users         User[]
+  patients      Patient[]
+  appointments  Appointment[]
+  subscription  Subscription?
+  settings      Settings?
+  auditLogs     AuditLog[]
+
+  @@index([status])
+  @@index([createdAt])
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  password      String?
-  image         String?
-  role          Role      @default(DOCTOR)
-  
-  clinicId      String?
-  clinic        Clinic?   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  id             String    @id @default(cuid())
+  name           String?
+  email          String?   @unique
+  emailVerified  DateTime?
+  password       String?
+  image          String?
+  role           Role      @default(DOCTOR)
+  sessionVersion Int       @default(0)
+  lastLoginAt    DateTime?
+
+  clinicId String?
+  clinic   Clinic? @relation(fields: [clinicId], references: [id], onDelete: Cascade)
 
   accounts      Account[]
   sessions      Session[]
+  userSessions  UserSession[]
   appointments  Appointment[] @relation("DoctorAppointments")
   auditLogs     AuditLog[]
+
+  @@index([clinicId])
+  @@index([role])
+}
+
+model Permission {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  description String?
+  createdAt   DateTime         @default(now())
+  rolePermissions RolePermission[]
+}
+
+model RolePermission {
+  id           String     @id @default(cuid())
+  role         Role
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([role, permissionId])
+  @@index([role])
 }
 
 model Subscription {
-  id              String   @id @default(cuid())
-  clinicId        String   @unique
-  clinic          Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  plan            String   @default("STARTER")
-  status          String   @default("ACTIVE")
-  startDate       DateTime @default(now())
-  endDate         DateTime?
+  id               String    @id @default(cuid())
+  clinicId         String    @unique
+  clinic           Clinic    @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  plan             String    @default("STARTER")
+  status           String    @default("ACTIVE")
+  startDate        DateTime  @default(now())
+  endDate          DateTime?
   stripeCustomerId String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([status])
 }
 
 model Settings {
-  id              String   @id @default(cuid())
-  clinicId        String   @unique
-  clinic          Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  timezone        String   @default("UTC")
-  language        String   @default("en")
-  theme           String   @default("light")
-  businessHours   String?  // Storing as JSON string
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id            String   @id @default(cuid())
+  clinicId      String   @unique
+  clinic        Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  timezone      String   @default("UTC")
+  language      String   @default("en")
+  theme         String   @default("light")
+  businessHours String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 model AuditLog {
-  id          String   @id @default(cuid())
-  action      String
-  entity      String
-  entityId    String?
-  details     String?  // Storing as JSON string
-  createdAt   DateTime @default(now())
-  
-  userId      String?
-  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  id        String   @id @default(cuid())
+  action    String
+  entity    String
+  entityId  String?
+  details   String?
+  createdAt DateTime @default(now())
 
-  clinicId    String
-  clinic      Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  clinicId String
+  clinic   Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId])
+  @@index([userId])
+  @@index([createdAt])
 }
 
-// Keeping basic models for future compatibility, not building out yet
 model Patient {
-  id          String   @id @default(cuid())
-  firstName   String
-  lastName    String
-  email       String?
-  phone       String?
-  dob         DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String    @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String?
+  phone     String?
+  dob       DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
-  clinicId    String
-  clinic      Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  clinicId String
+  clinic   Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
 
   appointments Appointment[]
+
+  @@index([clinicId])
 }
 
 model Appointment {
-  id          String   @id @default(cuid())
-  date        DateTime
-  notes       String?
-  status      String   @default("SCHEDULED")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  date      DateTime
+  notes     String?
+  status    String   @default("SCHEDULED")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  clinicId    String
-  clinic      Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  clinicId String
+  clinic   Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
 
-  patientId   String
-  patient     Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  patientId String
+  patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
-  doctorId    String
-  doctor      User     @relation("DoctorAppointments", fields: [doctorId], references: [id], onDelete: Cascade)
+  doctorId String
+  doctor   User   @relation("DoctorAppointments", fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId])
+  @@index([doctorId])
+  @@index([patientId])
+}
+
+model UserSession {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenId   String   @unique
+  userAgent String?
+  ipAddress String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 // Auth.js required models
 
 model Account {
-  id                 String  @id @default(cuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String?  @db.Text
-  access_token       String?  @db.Text
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String?  @db.Text
-  session_state      String?
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
