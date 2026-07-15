@@ -6,9 +6,9 @@ datasource db {
   provider = "postgresql"
 }
 
-// Multi-tenant architecture models
+// Multi-Clinic architecture models
 
-model Tenant {
+model Clinic {
   id          String   @id @default(cuid())
   name        String
   subdomain   String   @unique
@@ -32,11 +32,12 @@ model User {
   name          String?
   email         String?   @unique
   emailVerified DateTime?
+  password      String?
   image         String?
   role          Role      @default(DOCTOR)
   
-  tenantId      String?
-  tenant        Tenant?   @relation(fields: [tenantId], references: [id])
+  ClinicId      String?
+  Clinic        Clinic?   @relation(fields: [ClinicId], references: [id])
 
   accounts      Account[]
   sessions      Session[]
@@ -54,8 +55,8 @@ model Patient {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  ClinicId    String
+  Clinic      Clinic   @relation(fields: [ClinicId], references: [id])
 
   appointments Appointment[]
 }
@@ -68,8 +69,8 @@ model Appointment {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  ClinicId    String
+  Clinic      Clinic   @relation(fields: [ClinicId], references: [id])
 
   patientId   String
   patient     Patient  @relation(fields: [patientId], references: [id])
