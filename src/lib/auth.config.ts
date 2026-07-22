@@ -1,8 +1,16 @@
 import type { NextAuthConfig } from "next-auth";
-import { Role } from "@prisma/client";
 
 const SESSION_MAX_AGE_DEFAULT = 24 * 60 * 60;
 const SESSION_MAX_AGE_REMEMBER = 30 * 24 * 60 * 60;
+
+export const APP_ROLES = {
+  SUPER_ADMIN: "SUPER_ADMIN",
+  CLINIC_ADMIN: "CLINIC_ADMIN",
+  RECEPTIONIST: "RECEPTIONIST",
+  DOCTOR: "DOCTOR",
+} as const;
+
+export type AppRole = (typeof APP_ROLES)[keyof typeof APP_ROLES];
 
 export const authConfig = {
   trustHost: true,
@@ -32,7 +40,7 @@ export const authConfig = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id as string;
-        token.role = user.role as Role;
+        token.role = user.role as AppRole;
         token.clinicId = user.clinicId as string | null;
         token.sessionTokenId = user.sessionTokenId as string;
         token.rememberMe = user.rememberMe;
@@ -51,7 +59,7 @@ export const authConfig = {
       }
 
       session.user.id = token.id as string;
-      session.user.role = token.role as Role;
+      session.user.role = token.role as AppRole;
       session.user.clinicId = token.clinicId as string | null;
       session.user.sessionTokenId = token.sessionTokenId as string;
       return session;

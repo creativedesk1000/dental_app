@@ -1,7 +1,6 @@
 import NextAuth from "next-auth";
 import { NextResponse } from "next/server";
-import { authConfig } from "@/lib/auth.config";
-import { Role } from "@prisma/client";
+import { APP_ROLES, authConfig } from "@/lib/auth.config";
 
 const { auth } = NextAuth(authConfig);
 
@@ -56,7 +55,7 @@ export default auth((req) => {
       loginUrl.searchParams.set("callbackUrl", pathname);
       return NextResponse.redirect(loginUrl);
     }
-    if (role !== Role.SUPER_ADMIN) {
+    if (role !== APP_ROLES.SUPER_ADMIN) {
       return NextResponse.redirect(new URL("/dashboard", req.nextUrl.origin));
     }
     return NextResponse.next();
@@ -68,7 +67,7 @@ export default auth((req) => {
       loginUrl.searchParams.set("callbackUrl", pathname);
       return NextResponse.redirect(loginUrl);
     }
-    if (role === Role.SUPER_ADMIN) {
+    if (role === APP_ROLES.SUPER_ADMIN) {
       return NextResponse.redirect(new URL("/admin", req.nextUrl.origin));
     }
     return NextResponse.next();
@@ -78,7 +77,7 @@ export default auth((req) => {
     pathname.startsWith("/api/clinics") ||
     pathname.startsWith("/api/admin")
   ) {
-    if (!isLoggedIn || role !== Role.SUPER_ADMIN) {
+    if (!isLoggedIn || role !== APP_ROLES.SUPER_ADMIN) {
       return NextResponse.json(
         { success: false, message: "Forbidden" },
         { status: 403 }
@@ -110,7 +109,7 @@ export default auth((req) => {
       (pathname === "/login" || pathname === "/register")
     ) {
       const redirectUrl =
-        role === Role.SUPER_ADMIN ? "/admin" : "/dashboard";
+        role === APP_ROLES.SUPER_ADMIN ? "/admin" : "/dashboard";
       return NextResponse.redirect(new URL(redirectUrl, req.nextUrl.origin));
     }
     return NextResponse.next();

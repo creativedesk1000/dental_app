@@ -3,15 +3,16 @@
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { signIn } from "next-auth/react";
+import { getSession, signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Label } from "@/components/ui/input";
+import { APP_ROLES } from "@/lib/auth.config";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const callbackUrl = searchParams.get("callbackUrl") || "/";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -44,15 +45,23 @@ function LoginForm() {
       return;
     }
 
-    router.push(callbackUrl);
+    const session = await getSession();
+    const targetUrl =
+      callbackUrl && callbackUrl !== "/"
+        ? callbackUrl
+        : session?.user?.role === APP_ROLES.SUPER_ADMIN
+          ? "/admin"
+          : "/dashboard";
+
+    router.push(targetUrl);
     router.refresh();
   }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-2xl">Sign in</CardTitle>
-        <CardDescription>Access your DentalSaaS clinic dashboard</CardDescription>
+        <CardTitle className="text-2xl">Admin / clinic sign in</CardTitle>
+        <CardDescription>Access the DentalSaaS dashboard for your clinic or admin workspace</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
