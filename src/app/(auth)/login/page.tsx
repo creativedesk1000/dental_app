@@ -51,6 +51,8 @@ function LoginForm() {
         ? callbackUrl
         : session?.user?.role === APP_ROLES.SUPER_ADMIN
           ? "/admin"
+          : session?.user?.role === APP_ROLES.PATIENT
+          ? "/patient/dashboard"
           : "/dashboard";
 
     router.push(targetUrl);
@@ -60,8 +62,8 @@ function LoginForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-2xl">Admin / clinic sign in</CardTitle>
-        <CardDescription>Access the DentalSaaS dashboard for your clinic or admin workspace</CardDescription>
+        <CardTitle className="text-2xl">Sign in to DentalSaaS</CardTitle>
+        <CardDescription>Access your clinic dashboard or patient portal</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">

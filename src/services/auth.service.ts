@@ -17,11 +17,13 @@ import type {
   changePasswordSchema,
   forgotPasswordSchema,
   registerClinicSchema,
+  registerPatientSchema,
   resetPasswordSchema,
   verifyEmailSchema,
 } from "@/lib/validations/auth";
 
 type RegisterInput = z.infer<typeof registerClinicSchema>;
+type RegisterPatientInput = z.infer<typeof registerPatientSchema>;
 
 export async function registerClinic(input: RegisterInput) {
   const existingUser = await prisma.user.findUnique({
@@ -310,4 +312,76 @@ export async function revokeAllOtherSessions(
   });
 
   return { message: "All other sessions revoked" };
+}
+
+export async function registerPatient(input: RegisterPatientInput) {
+  const existingUser = await prisma.user.findUnique({
+    where: { email: input.email },
+  });
+  if (existingUser) {
+    throw new ApiException("Email already exists", 409);
+  }
+
+  const clinic = await prisma.clinic.findUnique({
+    where: { id: input.clinicId },
+  });
+  if (!clinic) {
+    throw new ApiException("Clinic not found", 404);
+  }
+
+  const hashedPassword = await bcrypt.hash(input.password, 12);
+
+  const result = await prisma.$transaction(async (tx) => {
+    const user = await tx.user.create({
+      data: {
+        name: `${input.firstName} ${input.lastName}`,
+        email: input.email,
+        password: hashedPassword,
+        role: Role.PATIENT,
+        clinicId: clinic.id,
+      },
+    });
+
+    // Check if patient record already exists (created by clinic before user registered)
+    const existingPatientRecord = await tx.patient.findFirst({
+      where: { email: input.email, clinicId: clinic.id },
+    });
+
+    let patientRecord;
+    if (existingPatientRecord) {
+      patientRecord = await tx.patient.update({
+        where: { id: existingPatientRecord.id },
+        data: { userId: user.id },
+      });
+    } else {
+      patientRecord = await tx.patient.create({
+        data: {
+          userId: user.id,
+          clinicId: clinic.id,
+          firstName: input.firstName,
+          lastName: input.lastName,
+          email: input.email,
+        },
+      });
+    }
+
+    return { user, patientRecord };
+  });
+
+  const { token } = await createVerificationToken(
+    input.email,
+    "email-verification",
+    true // Generate OTP
+  );
+  await sendVerificationEmail(input.email, token);
+
+  return {
+    user: {
+      id: result.user.id,
+      email: result.user.email,
+      role: result.user.role,
+      clinicId: result.user.clinicId,
+    },
+    message: "Registration successful. Please verify your email.",
+  };
 }

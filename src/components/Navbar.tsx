@@ -21,6 +21,9 @@ export function Navbar() {
             <Link href="/login">
               <Button variant="ghost">Login</Button>
             </Link>
+            <Link href="/register">
+              <Button variant="outline">Get Started</Button>
+            </Link>
             <Link href="/book-demo">
               <Button>Book Demo</Button>
             </Link>

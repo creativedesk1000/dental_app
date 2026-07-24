@@ -11,6 +11,7 @@ enum Role {
   CLINIC_ADMIN
   RECEPTIONIST
   DOCTOR
+  PATIENT
 }
 
 enum ClinicStatus {
@@ -34,6 +35,9 @@ model Clinic {
   users         User[]
   patients      Patient[]
   appointments  Appointment[]
+  treatments    Treatment[]
+  prescriptions Prescription[]
+  notifications Notification[]
   subscription  Subscription?
   settings      Settings?
   auditLogs     AuditLog[]
@@ -56,14 +60,97 @@ model User {
   clinicId String?
   clinic   Clinic? @relation(fields: [clinicId], references: [id], onDelete: Cascade)
 
-  accounts      Account[]
-  sessions      Session[]
-  userSessions  UserSession[]
-  appointments  Appointment[] @relation("DoctorAppointments")
-  auditLogs     AuditLog[]
+  accounts             Account[]
+  sessions             Session[]
+  userSessions         UserSession[]
+  appointments         Appointment[] @relation("DoctorAppointments")
+  auditLogs            AuditLog[]
+  doctorProfile        DoctorProfile?
+  doctorSchedule       DoctorSchedule[]
+  leaves               Leave[] @relation("DoctorLeaves")
+  leavesApproved       Leave[] @relation("ApprovedLeaves")
+  patientRecord        Patient?
+  treatmentsAsDoctor   Treatment[] @relation("DoctorTreatments")
+  prescriptionsAsDoctor Prescription[] @relation("DoctorPrescriptions")
+  notifications        Notification[]
 
   @@index([clinicId])
   @@index([role])
+}
+
+model DoctorProfile {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  specialty       String?
+  qualification   String?
+  experienceYears Int?
+  consultationFee Float?
+  licenseNumber   String?
+  bio             String?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+enum WeekDay {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+model DoctorSchedule {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dayOfWeek WeekDay
+  startTime String   // HH:mm format
+  endTime   String   // HH:mm format
+  isAvailable Boolean @default(true)
+  slotDuration Int?  // in minutes, default 30
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, dayOfWeek])
+  @@index([userId])
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum LeaveType {
+  VACATION
+  SICK
+  PERSONAL
+  OTHER
+}
+
+model Leave {
+  id         String       @id @default(cuid())
+  userId     String
+  user       User         @relation("DoctorLeaves", fields: [userId], references: [id], onDelete: Cascade)
+  startDate  DateTime
+  endDate    DateTime
+  reason     String?
+  type       LeaveType    @default(OTHER)
+  status     LeaveStatus  @default(PENDING)
+  approvedById String?
+  approvedBy User?        @relation("ApprovedLeaves", fields: [approvedById], references: [id], onDelete: SetNull)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([startDate, endDate])
 }
 
 model Permission {
@@ -131,21 +218,121 @@ model AuditLog {
 }
 
 model Patient {
-  id        String    @id @default(cuid())
-  firstName String
-  lastName  String
-  email     String?
-  phone     String?
-  dob       DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id               String    @id @default(cuid())
+  firstName        String
+  lastName         String
+  email            String?
+  phone            String?
+  dob              DateTime?
+  medicalHistory   String?
+  allergies        String?
+  emergencyContact String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  userId String? @unique
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   clinicId String
   clinic   Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
 
-  appointments Appointment[]
+  appointments  Appointment[]
+  treatments    Treatment[]
+  prescriptions Prescription[]
 
   @@index([clinicId])
+  @@index([userId])
+}
+
+enum TreatmentStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model Treatment {
+  id          String          @id @default(cuid())
+  title       String
+  description String?
+  status      TreatmentStatus @default(PLANNED)
+  startDate   DateTime        @default(now())
+  endDate     DateTime?
+  notes       String?
+
+  clinicId String
+  clinic   Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  patientId String
+  patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  doctorId String?
+  doctor   User?   @relation("DoctorTreatments", fields: [doctorId], references: [id], onDelete: SetNull)
+
+  prescriptions Prescription[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([doctorId])
+}
+
+model Prescription {
+  id           String   @id @default(cuid())
+  medication   String
+  dosage       String
+  frequency    String
+  duration     String
+  instructions String?
+
+  clinicId String
+  clinic   Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  patientId String
+  patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  doctorId String?
+  doctor   User?   @relation("DoctorPrescriptions", fields: [doctorId], references: [id], onDelete: SetNull)
+
+  treatmentId String?
+  treatment   Treatment? @relation(fields: [treatmentId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([doctorId])
+}
+
+enum NotificationType {
+  APPOINTMENT
+  PRESCRIPTION
+  TREATMENT
+  ANNOUNCEMENT
+  GENERAL
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  title     String
+  message   String
+  type      NotificationType @default(GENERAL)
+  isRead    Boolean          @default(false)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  clinicId String
+  clinic   Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([clinicId])
+  @@index([isRead])
 }
 
 model Appointment {

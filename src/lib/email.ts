@@ -74,3 +74,16 @@ export async function sendPasswordResetEmail(email: string, token: string) {
     html: `<p>You requested a password reset.</p><p><a href="${url}">Reset your password</a></p><p>This link expires in 1 hour. If you did not request this, ignore this email.</p>`,
   });
 }
+
+export async function sendPatientCredentialsEmail(email: string, password: string, clinicName: string) {
+  const url = appUrl(`/login`);
+  return sendEmail({
+    to: email,
+    subject: `Your Patient Portal Account for ${clinicName}`,
+    text: `Welcome to the Patient Portal for ${clinicName}. Login at ${url}. Email: ${email}, Password: ${password}. Please log in and change your password.`,
+    html: `<p>Welcome to the Patient Portal for <strong>${clinicName}</strong>.</p>
+           <p>Your account has been created by your clinic. You can log in here: <a href="${url}">Patient Portal</a></p>
+           <p><strong>Email:</strong> ${email}<br/><strong>Temporary Password:</strong> ${password}</p>
+           <p>Please log in and change your password immediately for security reasons.</p>`,
+  });
+}

@@ -8,6 +8,7 @@ export const APP_ROLES = {
   CLINIC_ADMIN: "CLINIC_ADMIN",
   RECEPTIONIST: "RECEPTIONIST",
   DOCTOR: "DOCTOR",
+  PATIENT: "PATIENT",
 } as const;
 
 export type AppRole = (typeof APP_ROLES)[keyof typeof APP_ROLES];
@@ -29,9 +30,9 @@ export const authConfig = {
           : "authjs.session-token",
       options: {
         httpOnly: true,
-        sameSite: "lax",
+        sameSite: "none",
         path: "/",
-        secure: process.env.NODE_ENV === "production",
+        secure: true,
       },
     },
   },

@@ -19,15 +19,18 @@ export default function RegisterPage() {
     address: "",
   });
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(false);
 
   function updateField(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
+    setFieldErrors((prev) => ({ ...prev, [field]: [] }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setFieldErrors({});
     setLoading(true);
 
     const res = await fetch("/api/auth/register", {
@@ -39,12 +42,20 @@ export default function RegisterPage() {
     const data = await res.json();
     setLoading(false);
 
+    if (data.errors) {
+      setFieldErrors(data.errors);
+    }
+
     if (!res.ok) {
       setError(data.message || "Registration failed");
       return;
     }
 
     router.push("/login?registered=true");
+  }
+
+  function fieldError(field: string) {
+    return fieldErrors[field]?.length ? fieldErrors[field][0] : null;
   }
 
   return (
@@ -66,8 +77,12 @@ export default function RegisterPage() {
               id="clinicName"
               value={form.clinicName}
               onChange={(e) => updateField("clinicName", e.target.value)}
+              className={fieldError("clinicName") ? "border-destructive" : ""}
               required
             />
+            {fieldError("clinicName") && (
+              <p className="text-xs text-destructive">{fieldError("clinicName")}</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="subdomain">Subdomain</Label>
@@ -78,8 +93,12 @@ export default function RegisterPage() {
                 updateField("subdomain", e.target.value.toLowerCase())
               }
               placeholder="my-clinic"
+              className={fieldError("subdomain") ? "border-destructive" : ""}
               required
             />
+            {fieldError("subdomain") && (
+              <p className="text-xs text-destructive">{fieldError("subdomain")}</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="name">Your name</Label>
@@ -87,8 +106,12 @@ export default function RegisterPage() {
               id="name"
               value={form.name}
               onChange={(e) => updateField("name", e.target.value)}
+              className={fieldError("name") ? "border-destructive" : ""}
               required
             />
+            {fieldError("name") && (
+              <p className="text-xs text-destructive">{fieldError("name")}</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
@@ -97,8 +120,12 @@ export default function RegisterPage() {
               type="email"
               value={form.email}
               onChange={(e) => updateField("email", e.target.value)}
+              className={fieldError("email") ? "border-destructive" : ""}
               required
             />
+            {fieldError("email") && (
+              <p className="text-xs text-destructive">{fieldError("email")}</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
@@ -107,8 +134,17 @@ export default function RegisterPage() {
               type="password"
               value={form.password}
               onChange={(e) => updateField("password", e.target.value)}
+              className={fieldError("password") ? "border-destructive" : ""}
               required
             />
+            {fieldError("password") && (
+              <p className="text-xs text-destructive">{fieldError("password")}</p>
+            )}
+            {!fieldError("password") && (
+              <p className="text-xs text-muted-foreground">
+                Must be at least 8 characters with uppercase, lowercase, and a number
+              </p>
+            )}
           </div>
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Creating clinic..." : "Create clinic"}

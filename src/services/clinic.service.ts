@@ -185,19 +185,40 @@ async function updateClinicStatus(
 }
 
 export async function getAdminStats() {
+  const now = new Date();
+  const startOfToday = new Date(now);
+  startOfToday.setHours(0, 0, 0, 0);
+
+  const endOfToday = new Date(now);
+  endOfToday.setHours(23, 59, 59, 999);
+
   const [
     totalClinics,
     activeClinics,
     suspendedClinics,
     totalUsers,
+    totalPatients,
+    doctors,
+    todayAppointments,
     activeSubscriptions,
     recentClinics,
     activeSessions,
+    revenueResult,
   ] = await Promise.all([
     prisma.clinic.count(),
     prisma.clinic.count({ where: { status: ClinicStatus.ACTIVE } }),
     prisma.clinic.count({ where: { status: ClinicStatus.SUSPENDED } }),
     prisma.user.count({ where: { role: { not: Role.SUPER_ADMIN } } }),
+    prisma.patient.count(),
+    prisma.user.count({ where: { role: Role.DOCTOR } }),
+    prisma.appointment.count({
+      where: {
+        date: {
+          gte: startOfToday,
+          lte: endOfToday,
+        },
+      },
+    }),
     prisma.subscription.count({ where: { status: "ACTIVE" } }),
     prisma.clinic.findMany({
       take: 5,
@@ -211,17 +232,35 @@ export async function getAdminStats() {
       },
     }),
     prisma.userSession.count({
-      where: { expiresAt: { gt: new Date() } },
+      where: { expiresAt: { gt: now } },
+    }),
+    prisma.subscription.findMany({
+      where: { status: "ACTIVE" },
+      select: { plan: true },
     }),
   ]);
+
+  const planRevenueMap: Record<string, number> = {
+    STARTER: 149,
+    GROWTH: 299,
+    ENTERPRISE: 499,
+  };
+
+  const revenue = revenueResult.reduce((sum, subscription) => {
+    return sum + (planRevenueMap[subscription.plan] ?? 0);
+  }, 0);
 
   return {
     totalClinics,
     activeClinics,
     suspendedClinics,
     totalUsers,
+    totalPatients,
+    doctors,
+    todayAppointments,
     activeSubscriptions,
-    onlineUsers: activeSessions,
+    revenue,
+    activeUsers: activeSessions,
     recentClinics,
   };
 }

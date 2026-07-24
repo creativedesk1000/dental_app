@@ -9,6 +9,10 @@ class AppTextField extends StatelessWidget {
   final bool obscureText;
   final TextInputType keyboardType;
   final Widget? suffixIcon;
+  final String? Function(String?)? validator;
+  final TextInputAction? textInputAction;
+  final void Function(String)? onSubmitted;
+  final bool enabled;
 
   const AppTextField({
     super.key,
@@ -18,6 +22,10 @@ class AppTextField extends StatelessWidget {
     this.obscureText = false,
     this.keyboardType = TextInputType.text,
     this.suffixIcon,
+    this.validator,
+    this.textInputAction,
+    this.onSubmitted,
+    this.enabled = true,
   });
 
   @override
@@ -27,17 +35,21 @@ class AppTextField extends StatelessWidget {
       children: [
         Text(label, style: AppTextStyles.fieldLabel),
         const SizedBox(height: 8),
-        TextField(
+        TextFormField(
           controller: controller,
           obscureText: obscureText,
           keyboardType: keyboardType,
           style: AppTextStyles.fieldInput,
+          textInputAction: textInputAction,
+          onFieldSubmitted: onSubmitted,
+          validator: validator,
+          enabled: enabled,
           decoration: InputDecoration(
             hintText: hintText,
             hintStyle: AppTextStyles.fieldHint,
             suffixIcon: suffixIcon,
             filled: true,
-            fillColor: AppColors.fieldBg,
+            fillColor: enabled ? AppColors.fieldBg : Colors.grey.shade100,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 16,
@@ -56,6 +68,14 @@ class AppTextField extends StatelessWidget {
                 color: AppColors.primaryTeal,
                 width: 1.5,
               ),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: Colors.red, width: 1),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: Colors.red, width: 1.5),
             ),
           ),
         ),

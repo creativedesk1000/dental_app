@@ -8,9 +8,17 @@ const TOKEN_EXPIRY = {
 
 export async function createVerificationToken(
   identifier: string,
-  type: "email-verification" | "password-reset"
+  type: "email-verification" | "password-reset",
+  isOtp: boolean = false
 ) {
-  const token = crypto.randomBytes(32).toString("hex");
+  let token;
+  if (isOtp) {
+    // Generate a 6-digit OTP
+    token = Math.floor(100000 + Math.random() * 900000).toString();
+  } else {
+    token = crypto.randomBytes(32).toString("hex");
+  }
+
   const expires = new Date(
     Date.now() +
       (type === "email-verification"

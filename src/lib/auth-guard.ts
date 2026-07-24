@@ -5,6 +5,7 @@ import {
   type PermissionName,
   roleHasPermission,
   roleHasAnyPermission,
+  DEFAULT_ROLE_PERMISSIONS,
 } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import type { SessionUser } from "@/lib/tenant";
@@ -55,6 +56,10 @@ export async function requirePermission(
   permission: PermissionName
 ) {
   const cache = await loadPermissionCache();
+  // If DB cache doesn't have permissions for this role, fall back to default hardcoded permissions
+  if (!cache.has(user.role)) {
+    cache.set(user.role, new Set(DEFAULT_ROLE_PERMISSIONS[user.role] || []));
+  }
   if (!roleHasPermission(user.role, permission, cache)) {
     throw new ApiException("Insufficient permissions", 403);
   }
@@ -65,6 +70,10 @@ export async function requireAnyPermission(
   permissions: PermissionName[]
 ) {
   const cache = await loadPermissionCache();
+  // If DB cache doesn't have permissions for this role, fall back to default hardcoded permissions
+  if (!cache.has(user.role)) {
+    cache.set(user.role, new Set(DEFAULT_ROLE_PERMISSIONS[user.role] || []));
+  }
   if (!roleHasAnyPermission(user.role, permissions, cache)) {
     throw new ApiException("Insufficient permissions", 403);
   }
